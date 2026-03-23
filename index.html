@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YT → Audio</title>
+
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0a0a'/%3E%3Cpolygon points='22,16 50,32 22,48' fill='%23ff2d55'/%3E%3Ccircle cx='18' cy='52' r='7' fill='%23ff6b35'/%3E%3Crect x='11' y='30' width='4' height='22' rx='2' fill='%23ff6b35'/%3E%3C/svg%3E"/>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #222222;
+      --accent: #ff2d55;
+      --accent2: #ff6b35;
+      --text: #f0f0f0;
+      --muted: #555;
+      --mono: 'Space Mono', monospace;
+      --display: 'Bebas Neue', sans-serif;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Grain texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: min(500px, 80vw); height: min(500px, 80vw); background: var(--accent); top: -20%; left: -15%; }
+    .blob-2 { width: min(400px, 70vw); height: min(400px, 70vw); background: var(--accent2); bottom: -15%; right: -15%; }
+
+    /* ── CARD ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 620px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: clamp(1.4rem, 5vw, 3rem) clamp(1.2rem, 5vw, 3rem) clamp(1.2rem, 4vw, 2.5rem);
+      animation: fadeUp 0.55s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* ── HEADER ── */
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(0.7rem, 2vw, 1rem);
+      margin-bottom: 0.3rem;
+    }
+
+    .logo-icon {
+      flex-shrink: 0;
+      width: clamp(34px, 9vw, 52px);
+      height: clamp(34px, 9vw, 52px);
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: clamp(0.15rem, 1vw, 0.3rem);
+    }
+
+    .logo-icon svg { width: 50%; height: 50%; }
+
+    .badge {
+      display: inline-block;
+      font-size: clamp(0.52rem, 1.5vw, 0.65rem);
+      letter-spacing: 0.18em;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 10px;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(1.9rem, 9vw, 4.5rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      background: linear-gradient(135deg, #fff 40%, #888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: clamp(0.58rem, 1.8vw, 0.7rem);
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+      margin-bottom: clamp(1.2rem, 4vw, 2.5rem);
+    }
+
+    .divider {
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      margin-bottom: clamp(1.2rem, 4vw, 2.5rem);
+    }
+
+    /* ── INPUT ── */
+    label {
+      display: block;
+      font-size: clamp(0.55rem, 1.5vw, 0.65rem);
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: row;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #000;
+      border: 1px solid var(--border);
+      border-right: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: clamp(0.68rem, 2vw, 0.8rem);
+      padding: clamp(0.7rem, 2vw, 0.85rem) clamp(0.7rem, 2vw, 0.9rem);
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+
+    input[type="text"]::placeholder { color: #2e2e2e; }
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    button#dl-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--display);
+      font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+      letter-spacing: 0.1em;
+      padding: clamp(0.7rem, 2vw, 0.85rem) clamp(0.8rem, 3vw, 1.6rem);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border-radius: 0;
+      -webkit-appearance: none;
+      touch-action: manipulation;
+    }
+
+    button#dl-btn:hover  { background: #e0002f; }
+    button#dl-btn:active { transform: scale(0.97); }
+    button#dl-btn:disabled { background: #2a2a2a; cursor: not-allowed; color: #444; }
+
+    /* Stack button below input on very small screens */
+    @media (max-width: 360px) {
+      .input-row { flex-direction: column; }
+      input[type="text"] {
+        border-right: 1px solid var(--border);
+        border-bottom: none;
+      }
+      button#dl-btn { width: 100%; text-align: center; padding: 0.85rem; }
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap {
+      margin-top: 0.85rem;
+      height: 2px;
+      background: var(--border);
+      overflow: hidden;
+      display: none;
+    }
+    .progress-wrap.visible { display: block; }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s ease;
+    }
+    .progress-bar.indeterminate {
+      width: 40%;
+      animation: slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0%   { transform: translateX(-150%); }
+      100% { transform: translateX(350%); }
+    }
+
+    /* ── STATUS ── */
+    .status {
+      margin-top: 1.1rem;
+      min-height: 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--muted);
+      margin-top: 0.22rem;
+      transition: background 0.2s;
+    }
+    .status-dot.loading { background: var(--accent2); animation: pulse 1s infinite; }
+    .status-dot.success { background: #00e676; }
+    .status-dot.error   { background: var(--accent); }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.25; }
+    }
+
+    .status-text {
+      font-size: clamp(0.62rem, 1.8vw, 0.72rem);
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .status-text.loading { color: var(--accent2); }
+    .status-text.success { color: #00e676; }
+    .status-text.error   { color: var(--accent); }
+
+    /* ── FOOTER ── */
+    .footer {
+      margin-top: clamp(1.2rem, 4vw, 2.5rem);
+      padding-top: 1.1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .footer-info {
+      font-size: clamp(0.5rem, 1.4vw, 0.6rem);
+      color: #2e2e2e;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .format-tag {
+      font-size: clamp(0.5rem, 1.4vw, 0.6rem);
+      color: var(--accent2);
+      border: 1px solid #2a1800;
+      background: #110800;
+      padding: 3px 8px;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="card">
+
+    <div class="header-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="5,3 21,12 5,21" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="badge">⬡ YouTube Extractor</div>
+        <h1>YT TO<br>AUDIO</h1>
+      </div>
+    </div>
+
+    <p class="subtitle">Paste · Convert · Download</p>
+    <div class="divider"></div>
+
+    <label for="yt-url">YouTube URL</label>
+    <div class="input-row">
+      <input
+        type="text"
+        id="yt-url"
+        placeholder="https://youtube.com/watch?v=..."
+        autocomplete="off"
+        spellcheck="false"
+        inputmode="url"
+      />
+      <button id="dl-btn" onclick="startDownload()">DOWNLOAD</button>
+    </div>
+
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar indeterminate" id="progress-bar"></div>
+    </div>
+
+    <div class="status">
+      <div class="status-dot" id="s-dot"></div>
+      <span class="status-text" id="s-text">Ready to extract audio</span>
+    </div>
+
+    <div class="footer">
+      <span class="footer-info">api · railway.app</span>
+      <div class="tags">
+        <span class="format-tag">MP3</span>
+        <span class="format-tag">AAC</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    async function startDownload() {
+      const input = document.getElementById('yt-url');
+      const btn   = document.getElementById('dl-btn');
+      const wrap  = document.getElementById('progress-wrap');
+      const bar   = document.getElementById('progress-bar');
+
+      const url = input.value.trim();
+
+      if (!url) {
+        setStatus('error', 'Please paste a YouTube URL first.'); return;
+      }
+      if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+        setStatus('error', "Doesn't look like a YouTube link."); return;
+      }
+
+      btn.disabled = true;
+      wrap.classList.add('visible');
+      bar.className = 'progress-bar indeterminate';
+      setStatus('loading', 'Connecting to server…');
+
+      try {
+        const apiUrl = `https://youtubedownload-production-a07b.up.railway.app/download?link=${encodeURIComponent(url)}`;
+        setStatus('loading', 'Fetching audio — this may take a moment…');
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+        setStatus('loading', 'Preparing your download…');
+
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        const filename = match ? match[1].replace(/['"]/g, '') : 'audio.mp3';
+
+        const objUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objUrl; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(objUrl);
+
+        bar.className = 'progress-bar';
+        bar.style.width = '100%';
+        setStatus('success', `✓ Downloaded: ${filename}`);
+        input.value = '';
+
+        setTimeout(() => {
+          wrap.classList.remove('visible');
+          bar.style.width = '0%';
+        }, 2500);
+
+      } catch (err) {
+        bar.className = 'progress-bar';
+        bar.style.width = '0%';
+        wrap.classList.remove('visible');
+        setStatus('error', err.message || 'Download failed. Is the server running?');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setStatus(type, message) {
+      const dot = document.getElementById('s-dot');
+      const txt = document.getElementById('s-text');
+      dot.className = `status-dot ${type}`;
+      txt.className = `status-text ${type}`;
+      txt.textContent = message;
+    }
+
+    document.getElementById('yt-url').addEventListener('keydown', e => {
+      if (e.key === 'Enter') startDownload();
+    });
+  </script>
+
+</body>
+</html>
