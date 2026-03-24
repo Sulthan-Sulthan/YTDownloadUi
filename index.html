@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YT → Audio</title>
+  <title>YT Downloader</title>
 
   <!-- Inline SVG Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0a0a'/%3E%3Cpolygon points='22,16 50,32 22,48' fill='%23ff2d55'/%3E%3Ccircle cx='18' cy='52' r='7' fill='%23ff6b35'/%3E%3Crect x='11' y='30' width='4' height='22' rx='2' fill='%23ff6b35'/%3E%3C/svg%3E"/>
@@ -18,10 +18,16 @@
       --border: #222222;
       --accent: #ff2d55;
       --accent2: #ff6b35;
+      --blue: #3d8bff;
+      --blue2: #7b5fff;
       --text: #f0f0f0;
       --muted: #555;
       --mono: 'Space Mono', monospace;
       --display: 'Bebas Neue', sans-serif;
+
+      /* active mode colors — toggled by JS */
+      --mode-a: var(--accent);
+      --mode-b: var(--accent2);
     }
 
     html { font-size: 16px; }
@@ -41,7 +47,6 @@
       overflow-x: hidden;
     }
 
-    /* Grain texture */
     body::before {
       content: '';
       position: fixed;
@@ -55,29 +60,30 @@
     .blob {
       position: fixed;
       border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.08;
+      filter: blur(90px);
+      opacity: 0.07;
       pointer-events: none;
       z-index: 0;
+      transition: background 0.6s ease;
     }
-    .blob-1 { width: min(500px, 80vw); height: min(500px, 80vw); background: var(--accent); top: -20%; left: -15%; }
-    .blob-2 { width: min(400px, 70vw); height: min(400px, 70vw); background: var(--accent2); bottom: -15%; right: -15%; }
+    .blob-1 { width: min(500px,80vw); height: min(500px,80vw); top: -20%; left: -15%; }
+    .blob-2 { width: min(400px,70vw); height: min(400px,70vw); bottom: -15%; right: -15%; }
 
     /* ── CARD ── */
     .card {
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 620px;
+      max-width: 640px;
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: clamp(1.4rem, 5vw, 3rem) clamp(1.2rem, 5vw, 3rem) clamp(1.2rem, 4vw, 2.5rem);
+      padding: clamp(1.4rem,5vw,3rem) clamp(1.2rem,5vw,3rem) clamp(1.2rem,4vw,2.5rem);
       animation: fadeUp 0.55s ease both;
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
     }
 
     .card::before {
@@ -85,82 +91,131 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      background: linear-gradient(90deg, var(--mode-a), var(--mode-b));
+      transition: background 0.4s ease;
     }
 
     /* ── HEADER ── */
     .header-row {
       display: flex;
       align-items: flex-start;
-      gap: clamp(0.7rem, 2vw, 1rem);
+      gap: clamp(0.7rem,2vw,1rem);
       margin-bottom: 0.3rem;
     }
 
     .logo-icon {
       flex-shrink: 0;
-      width: clamp(34px, 9vw, 52px);
-      height: clamp(34px, 9vw, 52px);
-      background: var(--accent);
+      width: clamp(34px,9vw,52px);
+      height: clamp(34px,9vw,52px);
+      background: var(--mode-a);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: clamp(0.15rem, 1vw, 0.3rem);
+      margin-top: clamp(0.15rem,1vw,0.3rem);
+      transition: background 0.4s ease;
     }
-
     .logo-icon svg { width: 50%; height: 50%; }
 
     .badge {
       display: inline-block;
-      font-size: clamp(0.52rem, 1.5vw, 0.65rem);
+      font-size: clamp(0.52rem,1.5vw,0.65rem);
       letter-spacing: 0.18em;
-      color: var(--accent);
-      border: 1px solid var(--accent);
+      color: var(--mode-a);
+      border: 1px solid var(--mode-a);
       padding: 3px 10px;
       margin-bottom: 0.4rem;
       text-transform: uppercase;
+      transition: color 0.4s, border-color 0.4s;
     }
 
     h1 {
       font-family: var(--display);
-      font-size: clamp(1.9rem, 9vw, 4.5rem);
+      font-size: clamp(1.9rem,9vw,4.5rem);
       line-height: 0.92;
       letter-spacing: 0.02em;
-      background: linear-gradient(135deg, #fff 40%, #888);
+      background: linear-gradient(135deg,#fff 40%,#888);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .subtitle {
-      font-size: clamp(0.58rem, 1.8vw, 0.7rem);
+      font-size: clamp(0.58rem,1.8vw,0.7rem);
       color: var(--muted);
       letter-spacing: 0.12em;
       text-transform: uppercase;
       margin-top: 0.5rem;
-      margin-bottom: clamp(1.2rem, 4vw, 2.5rem);
+      margin-bottom: clamp(1.2rem,4vw,2rem);
     }
 
     .divider {
-      width: 40px;
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent), transparent);
-      margin-bottom: clamp(1.2rem, 4vw, 2.5rem);
+      width: 40px; height: 2px;
+      background: linear-gradient(90deg, var(--mode-a), transparent);
+      margin-bottom: clamp(1.2rem,4vw,2rem);
+      transition: background 0.4s ease;
+    }
+
+    /* ── TOGGLE SWITCH ── */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: clamp(1.2rem,4vw,2rem);
+      width: 100%;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      background: #000;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: clamp(0.6rem,1.8vw,0.72rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: clamp(0.55rem,2vw,0.75rem) 0.5rem;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, border-color 0.25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      -webkit-appearance: none;
+      border-radius: 0;
+      touch-action: manipulation;
+    }
+
+    .toggle-btn svg {
+      width: clamp(12px,2.5vw,16px);
+      height: clamp(12px,2.5vw,16px);
+      flex-shrink: 0;
+    }
+
+    .toggle-btn:first-child { border-right: none; }
+
+    .toggle-btn.active-audio {
+      background: #1a0007;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .toggle-btn.active-video {
+      background: #000d1a;
+      color: var(--blue);
+      border-color: var(--blue);
     }
 
     /* ── INPUT ── */
     label {
       display: block;
-      font-size: clamp(0.55rem, 1.5vw, 0.65rem);
+      font-size: clamp(0.55rem,1.5vw,0.65rem);
       letter-spacing: 0.15em;
       color: var(--muted);
       text-transform: uppercase;
       margin-bottom: 0.5rem;
     }
 
-    .input-row {
-      display: flex;
-      flex-direction: row;
-    }
+    .input-row { display: flex; }
 
     input[type="text"] {
       flex: 1;
@@ -169,50 +224,54 @@
       border-right: none;
       color: var(--text);
       font-family: var(--mono);
-      font-size: clamp(0.68rem, 2vw, 0.8rem);
-      padding: clamp(0.7rem, 2vw, 0.85rem) clamp(0.7rem, 2vw, 0.9rem);
+      font-size: clamp(0.68rem,2vw,0.8rem);
+      padding: clamp(0.7rem,2vw,0.85rem) clamp(0.7rem,2vw,0.9rem);
       outline: none;
       transition: border-color 0.2s;
       min-width: 0;
       -webkit-appearance: none;
       border-radius: 0;
     }
-
     input[type="text"]::placeholder { color: #2e2e2e; }
-    input[type="text"]:focus { border-color: var(--accent); }
+    input[type="text"]:focus { border-color: var(--mode-a); }
 
     button#dl-btn {
-      background: var(--accent);
+      background: var(--mode-a);
       color: #fff;
       border: none;
       font-family: var(--display);
-      font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+      font-size: clamp(0.8rem,2.5vw,1.05rem);
       letter-spacing: 0.1em;
-      padding: clamp(0.7rem, 2vw, 0.85rem) clamp(0.8rem, 3vw, 1.6rem);
+      padding: clamp(0.7rem,2vw,0.85rem) clamp(0.8rem,3vw,1.5rem);
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.25s, transform 0.1s;
       white-space: nowrap;
       flex-shrink: 0;
       border-radius: 0;
       -webkit-appearance: none;
       touch-action: manipulation;
     }
-
-    button#dl-btn:hover  { background: #e0002f; }
+    button#dl-btn:hover  { filter: brightness(0.85); }
     button#dl-btn:active { transform: scale(0.97); }
     button#dl-btn:disabled { background: #2a2a2a; cursor: not-allowed; color: #444; }
 
-    /* Stack button below input on very small screens */
     @media (max-width: 360px) {
       .input-row { flex-direction: column; }
-      input[type="text"] {
-        border-right: 1px solid var(--border);
-        border-bottom: none;
-      }
-      button#dl-btn { width: 100%; text-align: center; padding: 0.85rem; }
+      input[type="text"] { border-right: 1px solid var(--border); border-bottom: none; }
+      button#dl-btn { width: 100%; padding: 0.85rem; }
     }
 
-    /* ── PROGRESS BAR ── */
+    /* ── MODE HINT ── */
+    .mode-hint {
+      margin-top: 0.6rem;
+      font-size: clamp(0.55rem,1.5vw,0.62rem);
+      color: #333;
+      letter-spacing: 0.06em;
+      min-height: 1.1em;
+      transition: color 0.3s;
+    }
+
+    /* ── PROGRESS ── */
     .progress-wrap {
       margin-top: 0.85rem;
       height: 2px;
@@ -221,11 +280,9 @@
       display: none;
     }
     .progress-wrap.visible { display: block; }
-
     .progress-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
       transition: width 0.3s ease;
     }
     .progress-bar.indeterminate {
@@ -239,7 +296,7 @@
 
     /* ── STATUS ── */
     .status {
-      margin-top: 1.1rem;
+      margin-top: 1rem;
       min-height: 2rem;
       display: flex;
       align-items: flex-start;
@@ -259,12 +316,12 @@
     .status-dot.error   { background: var(--accent); }
 
     @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.25; }
+      0%,100% { opacity:1; }
+      50%      { opacity:0.25; }
     }
 
     .status-text {
-      font-size: clamp(0.62rem, 1.8vw, 0.72rem);
+      font-size: clamp(0.62rem,1.8vw,0.72rem);
       color: var(--muted);
       letter-spacing: 0.04em;
       transition: color 0.2s;
@@ -277,8 +334,8 @@
 
     /* ── FOOTER ── */
     .footer {
-      margin-top: clamp(1.2rem, 4vw, 2.5rem);
-      padding-top: 1.1rem;
+      margin-top: clamp(1.2rem,4vw,2rem);
+      padding-top: 1rem;
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
@@ -288,7 +345,7 @@
     }
 
     .footer-info {
-      font-size: clamp(0.5rem, 1.4vw, 0.6rem);
+      font-size: clamp(0.5rem,1.4vw,0.6rem);
       color: #2e2e2e;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -297,39 +354,75 @@
     .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
     .format-tag {
-      font-size: clamp(0.5rem, 1.4vw, 0.6rem);
-      color: var(--accent2);
-      border: 1px solid #2a1800;
-      background: #110800;
+      font-size: clamp(0.5rem,1.4vw,0.6rem);
+      border: 1px solid;
       padding: 3px 8px;
       letter-spacing: 0.1em;
       white-space: nowrap;
+      transition: color 0.4s, border-color 0.4s, background 0.4s;
+    }
+    .tag-audio { color: var(--accent2); border-color: #2a1800; background: #110800; }
+    .tag-video { color: var(--blue);    border-color: #001a2a; background: #00080f; }
+
+    .copyright {
+      font-size: clamp(0.5rem,1.4vw,0.6rem);
+      color: #333;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      width: 100%;
+    }
+
+    .copyright-link {
+      color: var(--mode-a);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: color 0.3s, border-color 0.3s;
+    }
+    .copyright-link:hover {
+      border-bottom-color: var(--mode-a);
     }
   </style>
 </head>
 <body>
 
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
+  <div class="blob blob-1" id="blob1"></div>
+  <div class="blob blob-2" id="blob2"></div>
 
-  <div class="card">
+  <div class="card" id="card">
 
     <div class="header-row">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="logo-icon" id="logo-icon">
+        <!-- Icon swapped by JS -->
+        <svg id="icon-audio" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="5,3 21,12 5,21" fill="white"/>
+        </svg>
+        <svg id="icon-video" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+          <rect x="2" y="5" width="13" height="14" rx="2" fill="white"/>
+          <polygon points="15,9 22,6 22,18 15,15" fill="white"/>
         </svg>
       </div>
       <div>
-        <div class="badge">⬡ YouTube Extractor</div>
-        <h1>YT TO<br>AUDIO</h1>
+        <div class="badge" id="badge">⬡ YouTube Extractor</div>
+        <h1 id="heading">YT TO<br>AUDIO</h1>
       </div>
     </div>
 
-    <p class="subtitle">Paste · Convert · Download</p>
-    <div class="divider"></div>
+    <p class="subtitle" id="subtitle">Paste · Convert · Download</p>
+    <div class="divider" id="divider"></div>
 
-    <label for="yt-url">YouTube URL</label>
+    <!-- Toggle -->
+    <div class="toggle-wrap">
+      <button class="toggle-btn active-audio" id="btn-audio" onclick="setMode('audio')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 21,12 5,21"/></svg>
+        Audio / MP3
+      </button>
+      <button class="toggle-btn" id="btn-video" onclick="setMode('video')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="5" width="13" height="14" rx="2"/><polygon points="15,9 22,6 22,18 15,15"/></svg>
+        Video / MP4
+      </button>
+    </div>
+
+    <label for="yt-url" id="url-label">YouTube URL — Audio</label>
     <div class="input-row">
       <input
         type="text"
@@ -342,31 +435,106 @@
       <button id="dl-btn" onclick="startDownload()">DOWNLOAD</button>
     </div>
 
+    <p class="mode-hint" id="mode-hint">Extracts MP3 audio from any YouTube video</p>
+
     <div class="progress-wrap" id="progress-wrap">
       <div class="progress-bar indeterminate" id="progress-bar"></div>
     </div>
 
     <div class="status">
       <div class="status-dot" id="s-dot"></div>
-      <span class="status-text" id="s-text">Ready to extract audio</span>
+      <span class="status-text" id="s-text">Ready to download</span>
     </div>
 
     <div class="footer">
-      <span class="footer-info">api · railway.app</span>
       <div class="tags">
-        <span class="format-tag">MP3</span>
-        <span class="format-tag">AAC</span>
+        <span class="format-tag tag-audio">MP3</span>
+        <span class="format-tag tag-video">MP4</span>
       </div>
+      <span class="copyright">© 2026 <a href="https://sulthan.netlify.app" target="_blank" rel="noopener noreferrer" class="copyright-link">Sulthan</a></span>
     </div>
 
   </div>
 
   <script>
+    // ── API endpoints ──
+    const APIS = {
+      audio: 'https://youtubedownload-production-a07b.up.railway.app/download?link=',
+      video: 'https://youtubedownload-production-a07b.up.railway.app/download-video?link='
+    };
+
+    let currentMode = 'audio';
+
+    const MODES = {
+      audio: {
+        accent:   '#ff2d55',
+        accent2:  '#ff6b35',
+        blob1:    '#ff2d55',
+        blob2:    '#ff6b35',
+        badge:    '⬡ YouTube Extractor',
+        heading:  'YT TO<br>AUDIO',
+        label:    'YouTube URL — Audio',
+        hint:     'Extracts MP3 audio from any YouTube video',
+        btnText:  'DOWNLOAD',
+        barGrad:  'linear-gradient(90deg,#ff2d55,#ff6b35)',
+      },
+      video: {
+        accent:   '#3d8bff',
+        accent2:  '#7b5fff',
+        blob1:    '#3d8bff',
+        blob2:    '#7b5fff',
+        badge:    '⬡ YouTube Downloader',
+        heading:  'YT TO<br>VIDEO',
+        label:    'YouTube URL — Video',
+        hint:     'Downloads MP4 video in best available quality',
+        btnText:  'DOWNLOAD',
+        barGrad:  'linear-gradient(90deg,#3d8bff,#7b5fff)',
+      }
+    };
+
+    function setMode(mode) {
+      currentMode = mode;
+      const m = MODES[mode];
+
+      // CSS vars on :root
+      document.documentElement.style.setProperty('--mode-a', m.accent);
+      document.documentElement.style.setProperty('--mode-b', m.accent2);
+
+      // Blobs
+      document.getElementById('blob1').style.background = m.blob1;
+      document.getElementById('blob2').style.background = m.blob2;
+
+      // Card top bar & divider (via CSS var, already reactive)
+      document.getElementById('badge').textContent = m.badge;
+      document.getElementById('heading').innerHTML  = m.heading;
+      document.getElementById('url-label').textContent = m.label;
+      document.getElementById('mode-hint').textContent  = m.hint;
+      document.getElementById('dl-btn').textContent     = m.btnText;
+      document.getElementById('dl-btn').style.background = m.accent;
+      document.getElementById('logo-icon').style.background = m.accent;
+      document.getElementById('progress-bar').style.background = m.barGrad;
+
+      // Icons
+      document.getElementById('icon-audio').style.display = mode === 'audio' ? '' : 'none';
+      document.getElementById('icon-video').style.display = mode === 'video' ? '' : 'none';
+
+      // Toggle buttons
+      document.getElementById('btn-audio').className =
+        'toggle-btn' + (mode === 'audio' ? ' active-audio' : '');
+      document.getElementById('btn-video').className =
+        'toggle-btn' + (mode === 'video' ? ' active-video' : '');
+
+      // Reset status
+      setStatus('', 'Ready to download');
+      document.getElementById('progress-wrap').classList.remove('visible');
+    }
+
     async function startDownload() {
       const input = document.getElementById('yt-url');
       const btn   = document.getElementById('dl-btn');
       const wrap  = document.getElementById('progress-wrap');
       const bar   = document.getElementById('progress-bar');
+      const m     = MODES[currentMode];
 
       const url = input.value.trim();
 
@@ -380,21 +548,25 @@
       btn.disabled = true;
       wrap.classList.add('visible');
       bar.className = 'progress-bar indeterminate';
+      bar.style.background = m.barGrad;
       setStatus('loading', 'Connecting to server…');
 
       try {
-        const apiUrl = `https://youtubedownload-production-a07b.up.railway.app/download?link=${encodeURIComponent(url)}`;
-        setStatus('loading', 'Fetching audio — this may take a moment…');
+        const apiUrl = APIS[currentMode] + encodeURIComponent(url);
+        setStatus('loading', currentMode === 'audio'
+          ? 'Extracting audio — this may take a moment…'
+          : 'Downloading video — this may take a moment…');
 
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`Server responded with ${response.status}`);
 
-        setStatus('loading', 'Preparing your download…');
+        setStatus('loading', 'Preparing your file…');
 
         const blob = await response.blob();
         const disposition = response.headers.get('Content-Disposition') || '';
         const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        const filename = match ? match[1].replace(/['"]/g, '') : 'audio.mp3';
+        const ext  = currentMode === 'audio' ? 'audio.mp3' : 'video.mp4';
+        const filename = match ? match[1].replace(/['"]/g, '') : ext;
 
         const objUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -417,7 +589,7 @@
         bar.className = 'progress-bar';
         bar.style.width = '0%';
         wrap.classList.remove('visible');
-        setStatus('error', err.message || 'Download failed. Is the server running?');
+        setStatus('error', err.message || 'Download failed. Check server.');
       } finally {
         btn.disabled = false;
       }
@@ -434,6 +606,9 @@
     document.getElementById('yt-url').addEventListener('keydown', e => {
       if (e.key === 'Enter') startDownload();
     });
+
+    // Init blobs with default colors
+    setMode('audio');
   </script>
 
 </body>
